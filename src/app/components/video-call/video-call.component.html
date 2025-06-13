@@ -1,0 +1,159 @@
+<div class="video-call-container">
+    <div *ngIf="!currentUser" class="loading-container">
+      <div class="spinner"></div>
+      <p>Initializing call...</p>
+    </div>
+    <div *ngIf="currentUser" class="video-call-content">
+      <div class="call-header">
+        <div class="call-info">
+          <h3>📹 Meeting Room</h3>
+          <p>Room ID: <code>{{ roomId }}</code></p>
+          <button (click)="copyRoomId()" class="copy-btn">📋 Copy</button>
+        </div>
+        
+        <div class="call-status">
+          <span class="status-indicator" [class]="getStatusClass()"></span>
+          {{ connectionStatus }}
+        </div>
+
+        <button (click)="toggleChat()" class="chat-toggle-btn" [class.active]="showChat">
+          💬 Chat {{ unreadMessages > 0 ? '(' + unreadMessages + ')' : '' }}
+        </button>
+      </div>
+
+      <div class="video-area" [class.chat-open]="showChat">
+        <div class="remote-video-container">
+          <video 
+            #remoteVideo 
+            autoplay 
+            playsinline 
+            class="remote-video"
+            [class.no-video]="!hasRemoteVideo">
+          </video>
+          <div *ngIf="!hasRemoteVideo" class="no-remote-overlay">
+            <div class="waiting-content">
+              <div class="avatar-large">{{ getInitials(currentUser.displayName || currentUser.phoneNumber || 'You') }}</div>
+              <h3>Waiting for someone to join...</h3>
+              <p>Share the room ID with someone to start the meeting</p>
+              <div class="room-id-display">
+                <code>{{ roomId }}</code>
+                <button (click)="copyRoomId()" class="copy-btn-large">Copy Room ID</button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="hasRemoteVideo" class="remote-user-info">
+            <span>{{ remoteUserName || 'Remote User' }}</span>
+          </div>
+        </div>
+        <div class="local-video-container" 
+             [style.right.px]="localVideoPosition.x"
+             [style.top.px]="localVideoPosition.y"
+             (pointerdown)="startDragging($event)">
+          <video 
+            #localVideo 
+            autoplay 
+            muted 
+            playsinline 
+            class="local-video">
+          </video>
+          <div class="local-user-info">
+            You ({{ currentUser.displayName || 'User' }}) ({{ isVideoOn ? '📹' : '📹̸' }}) ({{ isAudioOn ? '🎤' : '🎤̸' }})
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-container">
+          <div class="controls">
+            <!-- Microphone -->
+            <button 
+              (click)="toggleAudio()" 
+              [class]="'control-btn ' + (isAudioOn ? 'active' : 'inactive')"
+              [title]="isAudioOn ? 'Mute microphone' : 'Unmute microphone'">
+              {{ isAudioOn ? '🎤' : '🎤̸' }}
+            </button>
+            
+            <!-- Camera -->
+            <button 
+              (click)="toggleVideo()" 
+              [class]="'control-btn ' + (isVideoOn ? 'active' : 'inactive')"
+              [title]="isVideoOn ? 'Turn off camera' : 'Turn on camera'">
+              {{ isVideoOn ? '📹' : '📹̸' }}
+            </button>
+            
+            <!-- Switch Camera (Mobile) -->
+            <button 
+              (click)="switchCamera()" 
+              class="control-btn"
+              title="Switch camera">
+              🔄
+            </button>
+            
+            <!-- Screen Share -->
+            <button 
+              (click)="toggleScreenShare()" 
+              [class]="'control-btn ' + (isScreenSharing ? 'active' : '')"
+              title="Share screen">
+              {{ isScreenSharing ? '🖥️' : '💻' }}
+            </button>
+            
+            <!-- End Call -->
+            <button 
+              (click)="endCall()" 
+              class="control-btn end-call"
+              title="Leave meeting">
+              📞
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div class="chat-panel" [class.open]="showChat">
+        <div class="chat-header">
+          <h4>💬 Chat</h4>
+          <button (click)="toggleChat()" class="close-chat-btn">×</button>
+        </div>
+
+        <div class="chat-messages" #chatMessages>
+          <div *ngFor="let message of messages" class="message" [class.own]="message.senderId === currentUser.uid">
+            <div class="message-header">
+              <span class="sender-name">{{ message.senderName }}</span>
+              <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+            </div>
+            <div class="message-content">{{ message.content }}</div>
+          </div>
+          
+          <div *ngIf="messages.length === 0" class="no-messages">
+            No messages yet. Start the conversation!
+          </div>
+        </div>
+
+        <div class="chat-input-container">
+          <input 
+            type="text" 
+            [(ngModel)]="newMessage"
+            (keyup.enter)="sendMessage()"
+            placeholder="Type a message..."
+            class="chat-input"
+            maxlength="500">
+          <button 
+            (click)="sendMessage()" 
+            [disabled]="!newMessage.trim()"
+            class="send-btn">
+            📤
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div *ngIf="errorMessage" class="error-toast">
+      {{ errorMessage }}
+      <button (click)="clearError()" class="close-btn">×</button>
+    </div>
+
+    <div *ngIf="successMessage" class="success-toast">
+      {{ successMessage }}
+      <button (click)="clearSuccess()" class="close-btn">×</button>
+    </div>
+  </div>

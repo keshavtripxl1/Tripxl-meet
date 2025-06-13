@@ -1,0 +1,108 @@
+ <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1>📹TripXL Meet</h1>
+          <p>Secure video calling with phone verification</p>
+        </div>
+
+
+        <div *ngIf="currentStep === 'phone'" class="auth-step">
+          <h2>Enter Your Phone Number</h2>
+          <p class="subtitle">We'll send you a verification code</p>
+          
+          <div class="phone-input-group">
+            <select [(ngModel)]="selectedCountryCode" class="country-select">
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+86">🇨🇳 +86</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+81">🇯🇵 +81</option>
+              <option value="+55">🇧🇷 +55</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+7">🇷🇺 +7</option>
+            </select>
+            <input 
+              type="tel" 
+              [(ngModel)]="phoneNumber" 
+              placeholder="Phone number"
+              class="phone-input"
+              maxlength="15"
+              (keyup.enter)="sendOTP()">
+          </div>
+
+          <div id="recaptcha-container" class="recaptcha-container"></div>
+
+          <button 
+            (click)="sendOTP()" 
+            [disabled]="isLoading || !phoneNumber.trim()"
+            class="btn-primary">
+            <span *ngIf="!isLoading">Send Verification Code</span>
+            <span *ngIf="isLoading" class="loading-text">
+              <span class="spinner-small"></span>
+              Sending...
+            </span>
+          </button>
+        </div>
+
+    
+        <div *ngIf="currentStep === 'otp'" class="auth-step">
+          <h2>Enter Verification Code</h2>
+          <p class="subtitle">
+            We sent a 6-digit code to<br>
+            <strong>{{ selectedCountryCode }}{{ phoneNumber }}</strong>
+          </p>
+
+          <div class="otp-input-container">
+            <input 
+              type="text" 
+              [(ngModel)]="otpCode"
+              placeholder="000000"
+              class="otp-input"
+              maxlength="6"
+              (keyup.enter)="verifyOTP()">
+          </div>
+
+          <div class="name-input-group">
+            <label>Display Name (Optional)</label>
+            <input 
+              type="text" 
+              [(ngModel)]="displayName"
+              placeholder="Enter your name"
+              class="name-input"
+              maxlength="30">
+          </div>
+
+          <button 
+            (click)="verifyOTP()" 
+            [disabled]="isLoading || otpCode.length !== 6"
+            class="btn-primary">
+            <span *ngIf="!isLoading">Verify & Continue</span>
+            <span *ngIf="isLoading" class="loading-text">
+              <span class="spinner-small"></span>
+              Verifying...
+            </span>
+          </button>
+
+          <button (click)="goBack()" class="btn-secondary">
+            ← Change Phone Number
+          </button>
+        </div>
+
+
+        <div *ngIf="errorMessage" class="error-message">
+          <span class="error-icon">⚠️</span>
+          {{ errorMessage }}
+        </div>
+        <div *ngIf="successMessage" class="success-message">
+          <span class="success-icon">✅</span>
+          {{ successMessage }}
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+      </div>
+    </div> 
+

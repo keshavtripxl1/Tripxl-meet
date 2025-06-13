@@ -1,0 +1,185 @@
+<!-- lobby.component.html -->
+<div class="lobby-container">
+  <!-- Header -->
+  <div class="lobby-header">
+    <div class="user-info">
+      <div class="user-avatar">
+        {{ getUserInitials() }}
+      </div>
+      <div class="user-details">
+        <h3>{{ currentUser?.displayName || 'User' }}</h3>
+        <p>{{ currentUser?.phoneNumber }}</p>
+      </div>
+    </div>
+    <button (click)="signOut()" class="sign-out-btn">
+      🚪 Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="lobby-content">
+    <div class="welcome-section">
+      <h1>Welcome to TripXL Meet</h1>
+      <p>Start a video call or join an existing meeting</p>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="action-cards">
+      <!-- Create New Meeting -->
+      <div class="action-card create-meeting">
+        <div class="card-icon">📹</div>
+        <h3>Start New Meeting</h3>
+        <p>Create an instant meeting room</p>
+        <button (click)="createMeeting()" class="btn-primary" [disabled]="loading">
+          <span *ngIf="!loading">Start Meeting</span>
+          <span *ngIf="loading">Starting...</span>
+        </button>
+      </div>
+
+      <!-- Join Meeting -->
+      <div class="action-card join-meeting">
+        <div class="card-icon">🔗</div>
+        <h3>Join Meeting</h3>
+        <p>Enter meeting ID to join</p>
+        <div class="join-input-group">
+          <input
+            type="text"
+            [(ngModel)]="meetingId"
+            placeholder="Enter meeting ID"
+            class="meeting-input"
+            (keyup.enter)="joinMeeting()"
+            [disabled]="loading">
+          <button
+            (click)="joinMeeting()"
+            [disabled]="!meetingId.trim() || loading"
+            class="btn-secondary">
+            <span *ngIf="!loading">Join</span>
+            <span *ngIf="loading">Joining...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Online Users -->
+    <div class="online-users-section" *ngIf="onlineUsers.length > 0">
+      <h3>👥 Online Users ({{ onlineUsers.length }})</h3>
+      <div class="users-grid">
+        <div
+          *ngFor="let user of onlineUsers"
+          class="user-card"
+          [class.inviting]="isInvitingUser(user.uid)">
+          <div class="user-avatar-small">
+            {{ getInitials(user.displayName || user.phoneNumber) }}
+          </div>
+          <div class="user-info-small">
+            <p class="user-name">{{ user.displayName || 'User' }}</p>
+            <p class="user-phone">{{ formatPhoneNumber(user.phoneNumber) }}</p>
+          </div>
+          <button 
+            class="invite-btn" 
+            (click)="inviteUser(user)"
+            [disabled]="loading || isInvitingUser(user.uid)">
+            <span *ngIf="!isInvitingUser(user.uid)">📞 Invite</span>
+            <span *ngIf="isInvitingUser(user.uid)">⏳ Inviting...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Users Message -->
+    <div class="online-users-section" *ngIf="onlineUsers.length === 0">
+      <h3>👥 Online Users</h3>
+      <div class="no-users-message">
+        <div class="no-users-icon">👥</div>
+        <p>No other users are online right now</p>
+        <small>Other users will appear here when they're available for calls</small>
+      </div>
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="tips-section">
+      <h3>💡 Quick Tips</h3>
+      <div class="tips-grid">
+        <div class="tip-item">
+          <span class="tip-icon">🎥</span>
+          <span>High-quality video calling</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">💬</span>
+          <span>Real-time chat messaging</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">🔒</span>
+          <span>Secure phone verification</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-icon">📱</span>
+          <span>Works on any device</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error/Success Messages -->
+  <div *ngIf="errorMessage" class="error-message">
+    <span class="error-icon">⚠️</span>
+    {{ errorMessage }}
+    <button (click)="clearError()" class="close-btn">×</button>
+  </div>
+
+  <div *ngIf="successMessage" class="success-message">
+    <span class="success-icon">✅</span>
+    {{ successMessage }}
+    <button (click)="clearSuccess()" class="close-btn">×</button>
+  </div>
+
+  <!-- Invitation Modal -->
+  <div 
+    *ngIf="showInvitationModal" 
+    class="invitation-modal-overlay"
+    (click)="closeInvitationModal()">
+    <div class="invitation-modal" (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <div class="call-animation">
+          <div class="call-icon">📞</div>
+          <div class="call-rings">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
+            <div class="ring ring-3"></div>
+          </div>
+        </div>
+        <h2>Incoming Call</h2>
+      </div>
+      
+      <div class="modal-body">
+        <div class="caller-info">
+          <div class="caller-avatar">
+            {{ getInitials(currentInvitation?.fromUserName || 'U') }}
+          </div>
+          <div class="caller-details">
+            <h3>{{ currentInvitation?.fromUserName || 'Unknown User' }}</h3>
+            <p class="caller-phone">{{ formatPhoneNumber(currentInvitation?.fromUserPhone || '') }}</p>
+            <p class="call-status">is calling you...</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button 
+          (click)="declineInvitation()" 
+          class="decline-btn">
+          <span class="btn-icon">❌</span>
+          <span class="btn-text">Decline</span>
+        </button>
+        <button 
+          (click)="acceptInvitation()" 
+          class="accept-btn">
+          <span class="btn-icon">✅</span>
+          <span class="btn-text">Accept</span>
+        </button>
+      </div>
+      
+    </div>
+  </div>
+</div>
